@@ -164,9 +164,7 @@ class App < Sinatra::Application
   end
 
   def username_available?(username)
-    existing_users = @database_connection.sql("SELECT * FROM users where username = '#{username}'")
-
-    # existing_users = Users.where(:username => username)
+    existing_users = User.where(:username => "#{username}")
 
     existing_users.length == 0
   end
