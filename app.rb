@@ -19,9 +19,8 @@ class App < Sinatra::Application
     user = current_user
 
     if current_user
-      # users = @database_connection.sql("SELECT * FROM users WHERE id != #{user["id"]}")
       users = User.where.not(id: user["id"])
-      fish = @database_connection.sql("SELECT * FROM fish WHERE user_id = #{current_user["id"]}")
+      fish = Fish.where(:user_id => current_user["id"])
       erb :signed_in, locals: {current_user: user, users: users, fish_list: fish}
     else
       erb :signed_out
@@ -74,18 +73,15 @@ class App < Sinatra::Application
   end
 
   get "/fish/:id" do
-    fish = @database_connection.sql("SELECT * FROM fish WHERE id = #{params[:id]}").first
+    # fish = @database_connection.sql("SELECT * FROM fish WHERE id = #{params[:id]}").first
+    fish = Fish.find(params[:id])
     erb :"fish/show", locals: {fish: fish}
   end
 
   post "/fish" do
     if validate_fish_params
-      insert_sql = <<-SQL
-      INSERT INTO fish (name, wikipedia_page, user_id)
-      VALUES ('#{params[:name]}', '#{params[:wikipedia_page]}', #{current_user["id"]})
-      SQL
 
-      @database_connection.sql(insert_sql)
+      Fish.create(name: params[:name], wikipedia_page: params[:wikipedia_page], user_id: current_user["id"])
 
       flash[:notice] = "Fish Created"
 
@@ -170,12 +166,7 @@ class App < Sinatra::Application
   end
 
   def authenticate_user
-    select_sql = <<-SQL
-    SELECT * FROM users
-    WHERE username = '#{params[:username]}' AND password = '#{params[:password]}'
-    SQL
-
-    @database_connection.sql(select_sql).first
+    User.where(:username => "#{params[:username]}", :password => "#{params[:password]}").first
   end
 
   def current_user
