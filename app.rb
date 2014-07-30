@@ -19,7 +19,8 @@ class App < Sinatra::Application
     user = current_user
 
     if current_user
-      users = @database_connection.sql("SELECT * FROM users WHERE id != #{user["id"]}")
+      # users = @database_connection.sql("SELECT * FROM users WHERE id != #{user["id"]}")
+      users = User.where.not(id: user["id"])
       fish = @database_connection.sql("SELECT * FROM fish WHERE user_id = #{current_user["id"]}")
       erb :signed_in, locals: {current_user: user, users: users, fish_list: fish}
     else
@@ -33,12 +34,8 @@ class App < Sinatra::Application
 
   post "/registrations" do
     if validate_registration_params
-      insert_sql = <<-SQL
-      INSERT INTO users (username, password)
-      VALUES ('#{params[:username]}', '#{params[:password]}')
-      SQL
 
-      @database_connection.sql(insert_sql)
+      User.create(username: "#{params[:username]}", password:"#{params[:password]}")
 
       flash[:notice] = "Thanks for registering"
       redirect "/"
@@ -67,12 +64,7 @@ class App < Sinatra::Application
   end
 
   delete "/users/:id" do
-    delete_sql = <<-SQL
-    DELETE FROM users
-    WHERE id = #{params[:id]}
-    SQL
-
-    @database_connection.sql(delete_sql)
+    User.find(params[:id]).destroy
 
     redirect "/"
   end
@@ -173,6 +165,8 @@ class App < Sinatra::Application
 
   def username_available?(username)
     existing_users = @database_connection.sql("SELECT * FROM users where username = '#{username}'")
+
+    # existing_users = Users.where(:username => username)
 
     existing_users.length == 0
   end
